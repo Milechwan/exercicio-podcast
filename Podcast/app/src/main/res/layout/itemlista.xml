@@ -13,12 +13,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="8"
+            android:textColor="@color/nomePodcast"
             android:textSize="18sp" />
         <Button
             android:id="@+id/item_action"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="2"
             android:text="@string/action_download" />
 
     </LinearLayout>
@@ -27,6 +27,7 @@
         android:id="@+id/item_date"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:textColor="@color/detalhePodcast"
         android:textSize="12sp" />
 
 </LinearLayout>
