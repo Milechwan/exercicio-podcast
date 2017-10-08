@@ -1,9 +1,13 @@
 package br.ufpe.cin.if710.podcast.ui;
 
 import android.app.Activity;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -22,6 +26,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import br.ufpe.cin.if710.podcast.R;
+import br.ufpe.cin.if710.podcast.db.PodcastDBHelper;
+import br.ufpe.cin.if710.podcast.db.PodcastProvider;
+import br.ufpe.cin.if710.podcast.db.PodcastProviderContract;
 import br.ufpe.cin.if710.podcast.domain.ItemFeed;
 import br.ufpe.cin.if710.podcast.domain.XmlFeedParser;
 import br.ufpe.cin.if710.podcast.ui.adapter.XmlFeedAdapter;
@@ -105,6 +112,50 @@ public class MainActivity extends Activity {
             //atualizar o list view
             items.setAdapter(adapter);
             items.setTextFilterEnabled(true);
+
+            //passo 3 e 4
+            ContentResolver cr = getContentResolver();
+            ContentValues cv = new ContentValues();
+
+            for(int i=0;i<feed.size();i++){
+                ItemFeed if_ = feed.get(i);
+                cv.put(PodcastDBHelper.EPISODE_LINK,if_.getLink());
+                cv.put(PodcastDBHelper.EPISODE_DATE,if_.getPubDate());
+                cv.put(PodcastDBHelper.EPISODE_TITLE,if_.getTitle());
+                cv.put(PodcastDBHelper.EPISODE_DOWNLOAD_LINK,if_.getDownloadLink());
+                cv.put(PodcastDBHelper.EPISODE_DESC,if_.getDescription());
+                //Log.d("CV",cv.toString());
+                /*int x = helper.getWritableDatabase().update(PodcastDBHelper.DATABASE_TABLE,
+                        cv,
+                        PodcastDBHelper.EPISODE_DOWNLOAD_LINK+"=?",
+                        new String[]{if_.getDownloadLink()});
+                if(x==0) helper.getWritableDatabase().insert(PodcastDBHelper.DATABASE_TABLE,null,cv); */
+
+                cr.insert(PodcastProviderContract.EPISODE_LIST_URI,cv);
+                cv.clear();
+                //estou devendo pegar a URI
+
+            }
+            /*PodcastProvider pp = new PodcastProvider();
+            pp.setDb_help(getApplicationContext());
+            PodcastDBHelper helper = pp.getDBhelper();
+            ContentValues cv = new ContentValues();
+            for(int i=0;i<feed.size();i++){
+                ItemFeed if_ = feed.get(i);
+                cv.put(PodcastDBHelper.EPISODE_LINK,if_.getLink());
+                cv.put(PodcastDBHelper.EPISODE_DATE,if_.getPubDate());
+                cv.put(PodcastDBHelper.EPISODE_TITLE,if_.getTitle());
+                cv.put(PodcastDBHelper.EPISODE_DOWNLOAD_LINK,if_.getDownloadLink());
+                cv.put(PodcastDBHelper.EPISODE_DESC,if_.getDescription());
+                int x = helper.getWritableDatabase().update(PodcastDBHelper.DATABASE_TABLE,
+                        cv,
+                        PodcastDBHelper.EPISODE_DOWNLOAD_LINK+"=?",
+                        new String[]{if_.getDownloadLink()});
+                if(x==0) helper.getWritableDatabase().insert(PodcastDBHelper.DATABASE_TABLE,null,cv); //se x for 0, significa que nenhuma linha da tabela foi modificada
+                cv.clear();
+                //estou devendo pegar a URI
+
+            }**/
             /*
             items.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override

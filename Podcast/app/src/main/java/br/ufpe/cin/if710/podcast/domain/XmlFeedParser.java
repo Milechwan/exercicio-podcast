@@ -120,6 +120,9 @@ public class XmlFeedParser {
         parser.require(XmlPullParser.START_TAG, null, "enclosure");
         String data = parser.getAttributeValue(null,"url"); //basta pegar um atributo da tag, sem precisar usar os métodos da classe XmlFeedParser
         //como enclosure é uma tag self-closing, não precisa chamar parser.require para END_TAG
+        String[] link = data.split(" ");
+        data = link[0];
+        Log.d("ENCLOSURE",data);
         return data;
     }
 
