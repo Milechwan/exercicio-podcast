@@ -47,6 +47,7 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         items = (ListView) findViewById(R.id.items);
+
     }
 
     @Override
@@ -130,10 +131,14 @@ public class MainActivity extends Activity {
                         PodcastDBHelper.EPISODE_DOWNLOAD_LINK+"=?",
                         new String[]{if_.getDownloadLink()});
                 if(x==0) helper.getWritableDatabase().insert(PodcastDBHelper.DATABASE_TABLE,null,cv); */
-
-                cr.insert(PodcastProviderContract.EPISODE_LIST_URI,cv);
+                if(cr.update(PodcastProviderContract.EPISODE_LIST_URI,
+                        cv,
+                        PodcastDBHelper.EPISODE_DOWNLOAD_LINK+"=?",
+                        new String[]{if_.getDownloadLink()})==0){//se ele não encontrar na tabela nenhum item com tal link, pode inserir
+                        //isso é feito para evitar repetição de inserção no db
+                    cr.insert(PodcastProviderContract.EPISODE_LIST_URI,cv);
+                }
                 cv.clear();
-                //estou devendo pegar a URI
 
             }
             /*PodcastProvider pp = new PodcastProvider();
