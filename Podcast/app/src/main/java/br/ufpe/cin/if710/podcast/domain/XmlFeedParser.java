@@ -73,8 +73,8 @@ public class XmlFeedParser {
             if (name.equals("title")) {
                 title = readData(parser, "title");
             }
-            else if (name.equals("link")) {
-                link = readData(parser, "link");
+            else if (name.equals("guid")) {
+                link = readData(parser, "guid");
             }
             else if (name.equals("pubDate")) {
                 pubDate = readData(parser, "pubDate");
@@ -83,7 +83,6 @@ public class XmlFeedParser {
                 description = readData(parser, "description");
             }
             else if (name.equals("enclosure")) {
-                //TODO implementar resto do metodo para pegar atributo url da tag enclosure
                 downloadLink = readEnclosure(parser);
                 skip(parser);
             }
@@ -122,7 +121,7 @@ public class XmlFeedParser {
         //como enclosure é uma tag self-closing, não precisa chamar parser.require para END_TAG
         String[] link = data.split(" ");
         data = link[0];
-        Log.d("ENCLOSURE",data);
+        //Log.d("ENCLOSURE",data);
         return data;
     }
 

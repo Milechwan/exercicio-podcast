@@ -1,18 +1,26 @@
 package br.ufpe.cin.if710.podcast.ui;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.CursorAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.xmlpull.v1.XmlPullParserException;
@@ -38,8 +46,9 @@ public class MainActivity extends Activity {
     //ao fazer envio da resolucao, use este link no seu codigo!
     private final String RSS_FEED = "http://leopoldomt.com/if710/fronteirasdaciencia.xml";
     //TODO teste com outros links de podcast
-
+   // private static ServiceDownloadDB service_d;
     private ListView items;
+    private BroadcastDownload broad;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,7 +56,7 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         items = (ListView) findViewById(R.id.items);
-
+        //service_d = new ServiceDownloadDB();
     }
 
     @Override
@@ -71,20 +80,78 @@ public class MainActivity extends Activity {
         return super.onOptionsItemSelected(item);
     }
 
+    private class ViewHolder{ //usando padrão recomendado, contendo os textViews necessários na hora de alterar a view
+        final TextView textViewTitle;
+        final TextView textViewPubDate;
+
+        private ViewHolder(View view){
+            this.textViewTitle = (TextView) view.findViewById(R.id.item_title);
+            this.textViewPubDate = (TextView) view.findViewById(R.id.item_date);
+        }
+    }
+
+    private class AdapterItemdb extends CursorAdapter { //adapter customizado necessário para carregar os itens do db
+        //passo 6
+        ViewHolder vh;
+        Context c;
+        public AdapterItemdb(Context context, Cursor cursor){
+            super(context, cursor, 0);
+            c = context;
+        }
+        @Override
+        public View newView(Context context, Cursor cursor, ViewGroup parent) {
+            return LayoutInflater.from(context).inflate(R.layout.itemlista,parent,false); //usando o xml dado
+        }
+
+        @Override
+        public void bindView(View view, Context context, final Cursor cursor) {
+            vh = new ViewHolder(view); //padrão recomendado para o scroll
+            view.setTag(vh); //amarrando à view
+            String pubdate = cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DATE));
+            String title = cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_TITLE));
+
+            vh.textViewPubDate.setText(pubdate);
+            vh.textViewTitle.setText(title);
+
+            vh.textViewTitle.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) { //passo 5
+                    Intent i = new Intent(c,EpisodeDetailActivity.class);
+                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);//essa flag é necessária pois o listener está sendo instanciado
+                    //no próprio adapter e não numa activity
+                    i.putExtra("Titulo",cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_TITLE)));
+                    i.putExtra("Descricao",cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DESC)));
+                    i.putExtra("PubDate",cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DATE)));
+                    c.startActivity(i);
+                }
+            });
+        }
+    }
+
     @Override
     protected void onStart() {
         super.onStart();
-        new DownloadXmlTask().execute(RSS_FEED);
+        broad = new BroadcastDownload();
+        IntentFilter filter = new IntentFilter("br.ufpe.cin.if710.podcast.service.download_done");
+        registerReceiver(broad,filter);
+
+    }
+
+    @Override
+    protected void onResume(){
+        super.onResume();
+        //chama método estático do service que é responsável pelo startService, que irá fazer o download do feed
+        ServiceDownloadDB.startActionFeed(this);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        XmlFeedAdapter adapter = (XmlFeedAdapter) items.getAdapter();
-        adapter.clear();
+        unregisterReceiver(broad);
+
     }
 
-    private class DownloadXmlTask extends AsyncTask<String, Void, List<ItemFeed>> {
+  /*  private class DownloadXmlTask extends AsyncTask<String, Void, List<ItemFeed>> {
         @Override
         protected void onPreExecute() {
             Toast.makeText(getApplicationContext(), "iniciando...", Toast.LENGTH_SHORT).show();
@@ -126,23 +193,13 @@ public class MainActivity extends Activity {
                 cv.put(PodcastDBHelper.EPISODE_DOWNLOAD_LINK,if_.getDownloadLink());
                 cv.put(PodcastDBHelper.EPISODE_DESC,if_.getDescription());
                 //Log.d("CV",cv.toString());
-                /*int x = helper.getWritableDatabase().update(PodcastDBHelper.DATABASE_TABLE,
+                int x = helper.getWritableDatabase().update(PodcastDBHelper.DATABASE_TABLE,
                         cv,
                         PodcastDBHelper.EPISODE_DOWNLOAD_LINK+"=?",
                         new String[]{if_.getDownloadLink()});
-                if(x==0) helper.getWritableDatabase().insert(PodcastDBHelper.DATABASE_TABLE,null,cv); */
-                if(cr.update(PodcastProviderContract.EPISODE_LIST_URI,
-                        cv,
-                        PodcastDBHelper.EPISODE_DOWNLOAD_LINK+"=?",
-                        new String[]{if_.getDownloadLink()})==0){//se ele não encontrar na tabela nenhum item com tal link, pode inserir
-                        //isso é feito para evitar repetição de inserção no db
-                    cr.insert(PodcastProviderContract.EPISODE_LIST_URI,cv);
-                }
-                cv.clear();
-
-            }
-            /*PodcastProvider pp = new PodcastProvider();
-            pp.setDb_help(getApplicationContext());
+                if(x==0) helper.getWritableDatabase().insert(PodcastDBHelper.DATABASE_TABLE,null,cv);
+           {//se ele não encontrar na tabela nenhum item com tal link, pode inserir
+            PodcastProvider pp = new PodcastProvider();            pp.setDb_help(getApplicationContext());
             PodcastDBHelper helper = pp.getDBhelper();
             ContentValues cv = new ContentValues();
             for(int i=0;i<feed.size();i++){
@@ -160,8 +217,7 @@ public class MainActivity extends Activity {
                 cv.clear();
                 //estou devendo pegar a URI
 
-            }**/
-            /*
+            }
             items.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -171,11 +227,41 @@ public class MainActivity extends Activity {
                     Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
                 }
             });
-            /**/
+
         }
     }
+*/
+  public class BroadcastDownload extends BroadcastReceiver{
+        //passo 10
+      //o broadcast é dinâmico, por ser instanciado na própria main activity
+      public BroadcastDownload(){
 
-    //TODO Opcional - pesquise outros meios de obter arquivos da internet
+      }
+      @Override
+      public void onReceive(Context context, Intent intent) {
+          runThread();
+      }
+  }
+
+  public void runThread(){
+        runOnUiThread(new Thread(new Runnable() {
+            @Override
+            public void run() throws NullPointerException {
+                ContentResolver cr = getContentResolver();
+                Cursor c = cr.query(PodcastProviderContract.EPISODE_LIST_URI,
+                        PodcastDBHelper.columns,
+                        null,
+                        new String[]{},
+                        null);
+                //ao finalizar o download dos itens do feed, o broadcast receiver simplesmente seta o cursor adapter
+                AdapterItemdb aidb = new AdapterItemdb(getApplicationContext(),c);
+                items.setAdapter(aidb);
+
+            }
+        }));
+  }
+
+    //TODO Opcional - pesquise outros meios de obter arquivos da internet - não está sendo utilizado
     private String getRssFeed(String feed) throws IOException {
         InputStream in = null;
         String rssFeed = "";

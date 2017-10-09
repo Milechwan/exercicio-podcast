@@ -8,15 +8,22 @@
     <TextView
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
-        android:id="@+id/titulo_epi"/>
+        android:id="@+id/titulo_epi"
+        android:textSize="20sp"
+        android:fontFamily="sans-serif-condensed"
+        android:textColor="@color/nomePodcast"/>
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/desc_epi"/>
+        android:id="@+id/desc_epi"
+        android:textSize="18sp"
+        android:textColor="@color/detalhePodcast"/>
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/pubdate_epi"/>
+        android:id="@+id/pubdate_epi"
+        android:textSize="18sp"
+        android:textColor="@color/detalhePodcast"/>
 </LinearLayout>

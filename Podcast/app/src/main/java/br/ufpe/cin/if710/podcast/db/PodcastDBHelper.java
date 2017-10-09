@@ -32,6 +32,7 @@ public class PodcastDBHelper extends SQLiteOpenHelper {
     public final static String EPISODE_DOWNLOAD_LINK = "downloadLink";
     public final static String EPISODE_FILE_URI = "downloadUri";
 
+    //public final static String[] columns_adapter={EPISODE_DATE, EPISODE_TITLE};
     public final static String[] columns = {
             _ID, EPISODE_TITLE, EPISODE_DATE, EPISODE_LINK,
             EPISODE_DESC, EPISODE_DOWNLOAD_LINK, EPISODE_FILE_URI
@@ -41,7 +42,7 @@ public class PodcastDBHelper extends SQLiteOpenHelper {
                     + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                     + EPISODE_TITLE + " TEXT NOT NULL, "
                     + EPISODE_DATE + " TEXT NOT NULL, "
-                    + EPISODE_LINK + " TEXT NOT NULL, "
+                    + EPISODE_LINK + " TEXT, "
                     + EPISODE_DESC + " TEXT NOT NULL, "
                     + EPISODE_DOWNLOAD_LINK + " TEXT NOT NULL, "
                     + EPISODE_FILE_URI + " TEXT)";

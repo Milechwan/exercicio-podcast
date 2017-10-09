@@ -22,6 +22,6 @@ public class EpisodeDetailActivity extends Activity {
         tv_titulo.setText(i.getStringExtra("Titulo"));
         tv_desc.setText(i.getStringExtra("Descricao"));
         tv_pubdate.setText(i.getStringExtra("PubDate"));
-        //TODO preencher com informações do episódio clicado na lista...
+
     }
 }

@@ -28,9 +28,14 @@
 
         <activity android:name=".ui.EpisodeDetailActivity" />
 
-        <!--<service
+        <!--<receiver android:name=".ui.MainActivity$BroadcastDownload">
+            <intent-filter>
+                <action android:name="br.ufpe.cin.if710.podcast.service.download_done"/>
+            </intent-filter>
+        </receiver>-->
+        <service
             android:name=".ui.ServiceDownloadDB"
-            android:exported="false"></service>-->
+            android:exported="false"/>
     </application>
 
 </manifest>

@@ -3,12 +3,14 @@ package br.ufpe.cin.if710.podcast.ui.adapter;
 import java.util.List;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
 import br.ufpe.cin.if710.podcast.R;
+import br.ufpe.cin.if710.podcast.db.PodcastDBHelper;
 import br.ufpe.cin.if710.podcast.domain.ItemFeed;
 import br.ufpe.cin.if710.podcast.ui.EpisodeDetailActivity;
 
@@ -16,6 +18,7 @@ public class XmlFeedAdapter extends ArrayAdapter<ItemFeed> {
 
     int linkResource;
     Context c;
+   // Cursor cursor;
 
     public XmlFeedAdapter(Context context, int resource, List<ItemFeed> objects) {
         super(context, resource, objects);
@@ -23,6 +26,9 @@ public class XmlFeedAdapter extends ArrayAdapter<ItemFeed> {
         c = context;
     }
 
+   /* public void setCursor(Cursor cursr){
+        cursor = cursr;
+    }*/
     /**
      * public abstract View getView (int position, View convertView, ViewGroup parent)
      * <p>
@@ -67,16 +73,21 @@ public class XmlFeedAdapter extends ArrayAdapter<ItemFeed> {
         } else {
             holder = (ViewHolder) convertView.getTag();
         }
+       // String pubdate = cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DATE));
+        //String title = cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_TITLE));
+
         holder.item_title.setText(getItem(position).getTitle());
+        //passo 5
         holder.item_title.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent i = new Intent(c,EpisodeDetailActivity.class);
-                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);//essa flag é necessária pois o listener está sendo instanciado
+                //no próprio adapter e não numa activity
                 i.putExtra("Titulo",getItem(position).getTitle());
                 i.putExtra("Descricao",getItem(position).getDescription());
                 i.putExtra("PubDate",getItem(position).getPubDate());
-                c.startActivity(i);
+                c.startActivity(i);//redireciona para a activity desejada
             }
         });
         holder.item_date.setText(getItem(position).getPubDate());
