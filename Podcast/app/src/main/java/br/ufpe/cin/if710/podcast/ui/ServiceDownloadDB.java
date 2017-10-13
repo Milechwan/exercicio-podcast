@@ -5,13 +5,19 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.Context;
+import android.database.Cursor;
+import android.net.Uri;
+import android.os.Environment;
 import android.util.Log;
 import android.widget.ListView;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -31,9 +37,10 @@ public class ServiceDownloadDB extends IntentService {
     public static final String ACTION_Download = "br.ufpe.cin.if710.podcast.ui.action.download";
     private static final String ACTION_Epi = "br.ufpe.cin.if710.podcast.ui.action.download_episode";
 
-    ListView itens;
+    //private Intent i;
 
     private static final String TAG_FEED = "Feed";
+    private static final String TAG_EPISODE="Episode";
     private static final String RSS_FEED_URL = "http://leopoldomt.com/if710/fronteirasdaciencia.xml";//isso aqui é pra colcoar o link do feed
     //private static final String EXTRA_PARAM2 = "br.ufpe.cin.if710.podcast.ui.extra.PARAM2";
     List<ItemFeed> feed_itens;
@@ -49,13 +56,13 @@ public class ServiceDownloadDB extends IntentService {
         context.startService(intent);
     }
 
-    /*public static void startActionBaz(Context context, String param1) {
+    public static void startActionEpi(Context context, String param1) {
         Intent intent = new Intent(context, ServiceDownloadDB.class);
-        intent.setAction(ACTION_DB);
-        intent.putExtra(RSS_FEED_URL, param1);
+        intent.setAction(ACTION_Epi);
+        intent.putExtra(TAG_EPISODE, param1);
         //intent.putExtra(EXTRA_PARAM2, param2);
         context.startService(intent);
-    }*/
+    }
 
     @Override
     protected void onHandleIntent(Intent intent) {
@@ -93,9 +100,48 @@ public class ServiceDownloadDB extends IntentService {
 
                 //tem que inserir método de download do arquivo
             } else if (ACTION_Epi.equals(action)) {
-                final String param1 = intent.getStringExtra(RSS_FEED_URL);
+                final String param1 = intent.getStringExtra(TAG_EPISODE);
+//                File root = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+//                root.mkdirs();
+//                File output = new File(root, intent.getData().getLastPathSegment());
+//                if (output.exists()) {
+//                    output.delete();
+//                }
+
+               // i = intent;
+                    //
+                File epi = baixaEpisodio(param1);
+                ContentResolver cr = getContentResolver();
+                ContentValues cv = new ContentValues();
+                cv.put(PodcastDBHelper.EPISODE_FILE_URI,epi.toURI().toString());
+                int k = cr.update(PodcastProviderContract.EPISODE_LIST_URI,
+                        cv,
+                        PodcastDBHelper.EPISODE_DOWNLOAD_LINK+"=?",
+                        new String[]{param1});
+                try{
+                    Cursor c =cr.query(PodcastProviderContract.EPISODE_LIST_URI,PodcastDBHelper.columns,PodcastDBHelper.EPISODE_DOWNLOAD_LINK+"=?",new String[]{param1},null);
+                    if(c.moveToFirst()){
+                        String down = c.getString(c.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DOWNLOAD_LINK));
+                        String dat = c.getString(c.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DATE));
+                        String tit = c.getString(c.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_TITLE));
+                        String urr = c.getString(c.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_FILE_URI));
+                        String d = c.getString(c.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DESC));
+                        Log.d("UPDATE_CURSOR",down+" "+dat+" "+tit+" "+urr+" "+d);
+                        c.close();
+                    }
+                }catch (NullPointerException e){
+                    e.printStackTrace();
+                }
+
+
+               // int g=0;
+                    //handleActionBaz(bos);
+//                }catch(IOException e){
+//                    e.printStackTrace();
+//                }
+
                // final String param2 = intent.getStringExtra(EXTRA_PARAM2);
-                handleActionBaz(param1);
+
             }
         }
     }
@@ -105,6 +151,7 @@ public class ServiceDownloadDB extends IntentService {
         InputStream in = null;
         byte[] response;
         try {
+
             URL url = new URL(feed);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             in = conn.getInputStream();
@@ -122,6 +169,51 @@ public class ServiceDownloadDB extends IntentService {
             }
         }
        return response;
+    }
+
+    private File baixaEpisodio(String param){
+        String[] splitar=param.split("/");
+        String caminho = "podcasts_"+splitar[splitar.length-1];//teoricamente, o nome do arquivo fica após o último /
+        Log.d("PATH",caminho);
+        InputStream in = null;
+        FileOutputStream fos = null;
+        HttpURLConnection conection = null;
+        File f= null;
+
+        try{
+            URL url_ = new URL(param);
+            conection = (HttpURLConnection) url_.openConnection();
+            conection.connect();
+
+            if(conection.getResponseCode()!= HttpURLConnection.HTTP_OK){
+                Log.d("DEU_RUIM","Código HTTP "+conection.getResponseCode()+" "+conection.getResponseMessage());
+            }
+
+            f = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),caminho);
+            fos = new FileOutputStream(f.getPath());
+            BufferedOutputStream bos =  new BufferedOutputStream(fos);
+
+            try{
+                in = conection.getInputStream();
+                byte[] buffer = new byte[8192];
+                int tam = 0;
+
+                while((tam = in.read(buffer))>0){
+                    bos.write(buffer,0,tam);
+                }
+
+                bos.flush();
+            }finally {
+                fos.getFD().sync();
+                bos.close();
+                conection.disconnect();
+                Log.d("DOWNLOAD_FILE","Acabei :D");
+            }
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+
+        return f;
     }
 
     /**
@@ -146,8 +238,9 @@ public class ServiceDownloadDB extends IntentService {
      * Handle action Baz in the provided background thread with the provided
      * parameters.
      */
-    private void handleActionBaz(String param1) {
+    private void handleActionBaz(BufferedOutputStream bos) {
         // TODO: Handle action Baz
-        throw new UnsupportedOperationException("Not yet implemented");
+
+        //throw new UnsupportedOperationException("Not yet implemented");
     }
 }

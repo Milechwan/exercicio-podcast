@@ -18,6 +18,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.CursorAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -49,6 +50,7 @@ public class MainActivity extends Activity {
    // private static ServiceDownloadDB service_d;
     private ListView items;
     private BroadcastDownload broad;
+    private Cursor c;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +58,7 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         items = (ListView) findViewById(R.id.items);
+
         //service_d = new ServiceDownloadDB();
     }
 
@@ -83,20 +86,23 @@ public class MainActivity extends Activity {
     private class ViewHolder{ //usando padrão recomendado, contendo os textViews necessários na hora de alterar a view
         final TextView textViewTitle;
         final TextView textViewPubDate;
+        final Button btn_down;
 
         private ViewHolder(View view){
             this.textViewTitle = (TextView) view.findViewById(R.id.item_title);
             this.textViewPubDate = (TextView) view.findViewById(R.id.item_date);
+            this.btn_down = (Button) view.findViewById(R.id.item_action);
         }
     }
 
     private class AdapterItemdb extends CursorAdapter { //adapter customizado necessário para carregar os itens do db
         //passo 6
         ViewHolder vh;
-        Context c;
+        Context cont;
+
         public AdapterItemdb(Context context, Cursor cursor){
             super(context, cursor, 0);
-            c = context;
+            cont = context;
         }
         @Override
         public View newView(Context context, Cursor cursor, ViewGroup parent) {
@@ -113,16 +119,27 @@ public class MainActivity extends Activity {
             vh.textViewPubDate.setText(pubdate);
             vh.textViewTitle.setText(title);
 
+          //  position = cursor.getPosition();
+            final int position = cursor.getPosition();
             vh.textViewTitle.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) { //passo 5
-                    Intent i = new Intent(c,EpisodeDetailActivity.class);
+                    Intent i = new Intent(cont,EpisodeDetailActivity.class);
                     i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);//essa flag é necessária pois o listener está sendo instanciado
                     //no próprio adapter e não numa activity
+                    cursor.moveToPosition(position);
                     i.putExtra("Titulo",cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_TITLE)));
                     i.putExtra("Descricao",cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DESC)));
                     i.putExtra("PubDate",cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DATE)));
-                    c.startActivity(i);
+                    cont.startActivity(i);
+                }
+            });
+            vh.btn_down.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    cursor.moveToPosition(position);
+                    ServiceDownloadDB.startActionEpi(cont,cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DOWNLOAD_LINK)));
+                    Log.d("ID_ITEM_BTN",cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper._ID)));
                 }
             });
         }
@@ -140,13 +157,27 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume(){
         super.onResume();
-        //chama método estático do service que é responsável pelo startService, que irá fazer o download do feed
-        ServiceDownloadDB.startActionFeed(this);
+
+       try {//trocar para ver conexão com a internet
+           ContentResolver cr = getContentResolver();
+           c = cr.query(PodcastProviderContract.EPISODE_LIST_URI, new String[]{}, null, new String[]{}, null);
+           if (c.getCount() == 0) {
+               //chama método estático do service que é responsável pelo startService, que irá fazer o download do feed
+               ServiceDownloadDB.startActionFeed(this);
+           }else{
+               AdapterItemdb adapt = new AdapterItemdb(this,c);
+               items.setAdapter(adapt);
+           }
+
+       }catch (NullPointerException e){
+           e.printStackTrace();
+       }
     }
 
     @Override
     protected void onStop() {
         super.onStop();
+        c.close();
         unregisterReceiver(broad);
 
     }
@@ -231,9 +262,14 @@ public class MainActivity extends Activity {
         }
     }
 */
+  @Override
+  public void onPause(){
+      super.onPause();
+  }
+
   public class BroadcastDownload extends BroadcastReceiver{
         //passo 10
-      //o broadcast é dinâmico, por ser instanciado na própria main activity
+      //o receiver é dinâmico, por ser instanciado na própria main activity
       public BroadcastDownload(){
 
       }
@@ -256,10 +292,25 @@ public class MainActivity extends Activity {
                 //ao finalizar o download dos itens do feed, o broadcast receiver simplesmente seta o cursor adapter
                 AdapterItemdb aidb = new AdapterItemdb(getApplicationContext(),c);
                 items.setAdapter(aidb);
-
+                /*btn_down.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        ServiceDownloadDB.startAction
+                    }
+                });*/
             }
         }));
   }
+
+//  public void runThreadEpi(){
+//      runOnUiThread(new Runnable() {
+//          @Override
+//          public void run() {
+//              AdapterItemdb adap = (AdapterItemdb) items.getAdapter();
+//              adap.vh.btn_down.setText(R.string.muda_btn);
+//          }
+//      });
+//  }
 
     //TODO Opcional - pesquise outros meios de obter arquivos da internet - não está sendo utilizado
     private String getRssFeed(String feed) throws IOException {
