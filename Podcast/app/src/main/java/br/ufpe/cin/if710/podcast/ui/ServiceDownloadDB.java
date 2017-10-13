@@ -70,7 +70,6 @@ public class ServiceDownloadDB extends IntentService {
             final String action = intent.getAction();
             if (ACTION_Download.equals(action)) {//nesta action, faz-se o download do feed
                 final String param1 = intent.getStringExtra(TAG_FEED);
-                //final String param2 = intent.getStringExtra(EXTRA_PARAM2);
                 handleActionDownload(param1);
                 //daqui em diante, faz-se a inserção no banco de dados
                 ContentResolver cr = getContentResolver(); //responsável por lidar com o PodcastProvider
@@ -83,13 +82,13 @@ public class ServiceDownloadDB extends IntentService {
                     cv.put(PodcastDBHelper.EPISODE_TITLE,if_.getTitle());
                     cv.put(PodcastDBHelper.EPISODE_DOWNLOAD_LINK,if_.getDownloadLink());
                     cv.put(PodcastDBHelper.EPISODE_DESC,if_.getDescription());
-                //falta inserir o file_uri,
+
                     int upd = cr.update(PodcastProviderContract.EPISODE_LIST_URI,
                         cv,
                         PodcastDBHelper.EPISODE_DOWNLOAD_LINK+"=?",
                         new String[]{if_.getDownloadLink()});
                     if(upd==0){//se ele não encontrar na tabela nenhum item com tal link que seja atualizado, pode inserir
-                        //isso é feito para evitar repetição de inserção no db
+                        //a checagem é feita para evitar inserir itens já existentes no bd
                         cr.insert(PodcastProviderContract.EPISODE_LIST_URI,cv);
                     }
                     cv.clear();
@@ -98,7 +97,7 @@ public class ServiceDownloadDB extends IntentService {
                 //assim que terminar, manda brodcast para setar o adapter
                 sendBroadcast(new Intent("br.ufpe.cin.if710.podcast.service.download_done"));
 
-                //tem que inserir método de download do arquivo
+
             } else if (ACTION_Epi.equals(action)) {
                 final String param1 = intent.getStringExtra(TAG_EPISODE);
 //                File root = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
@@ -114,24 +113,24 @@ public class ServiceDownloadDB extends IntentService {
                 ContentResolver cr = getContentResolver();
                 ContentValues cv = new ContentValues();
                 cv.put(PodcastDBHelper.EPISODE_FILE_URI,epi.toURI().toString());
-                int k = cr.update(PodcastProviderContract.EPISODE_LIST_URI,
+                cr.update(PodcastProviderContract.EPISODE_LIST_URI,
                         cv,
                         PodcastDBHelper.EPISODE_DOWNLOAD_LINK+"=?",
                         new String[]{param1});
-                try{
-                    Cursor c =cr.query(PodcastProviderContract.EPISODE_LIST_URI,PodcastDBHelper.columns,PodcastDBHelper.EPISODE_DOWNLOAD_LINK+"=?",new String[]{param1},null);
-                    if(c.moveToFirst()){
-                        String down = c.getString(c.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DOWNLOAD_LINK));
-                        String dat = c.getString(c.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DATE));
-                        String tit = c.getString(c.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_TITLE));
-                        String urr = c.getString(c.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_FILE_URI));
-                        String d = c.getString(c.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DESC));
-                        Log.d("UPDATE_CURSOR",down+" "+dat+" "+tit+" "+urr+" "+d);
-                        c.close();
-                    }
-                }catch (NullPointerException e){
-                    e.printStackTrace();
-                }
+//                try{
+//                    Cursor c =cr.query(PodcastProviderContract.EPISODE_LIST_URI,PodcastDBHelper.columns,PodcastDBHelper.EPISODE_DOWNLOAD_LINK+"=?",new String[]{param1},null);
+//                    if(c.moveToFirst()){
+//                        String down = c.getString(c.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DOWNLOAD_LINK));
+//                        String dat = c.getString(c.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DATE));
+//                        String tit = c.getString(c.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_TITLE));
+//                        String urr = c.getString(c.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_FILE_URI));
+//                        String d = c.getString(c.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DESC));
+//                        Log.d("UPDATE_CURSOR",down+" "+dat+" "+tit+" "+urr+" "+d);
+//                        c.close();
+//                    }
+//                }catch (NullPointerException e){
+//                    e.printStackTrace();
+//                }
 
 
                // int g=0;
@@ -171,10 +170,9 @@ public class ServiceDownloadDB extends IntentService {
        return response;
     }
 
-    private File baixaEpisodio(String param){
+    private File baixaEpisodio(String param){//método exclusivo para baixar episódio
         String[] splitar=param.split("/");
-        String caminho = "podcasts_"+splitar[splitar.length-1];//teoricamente, o nome do arquivo fica após o último /
-        Log.d("PATH",caminho);
+        String caminho = "podcasts_"+splitar[splitar.length-1];//como o download link pega o endereço completo, foi necessário usar split para ter o nome específico do arquivo
         InputStream in = null;
         FileOutputStream fos = null;
         HttpURLConnection conection = null;
@@ -190,6 +188,7 @@ public class ServiceDownloadDB extends IntentService {
             }
 
             f = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),caminho);
+            //uso de diretório de downloads pois em alguns aparelhos, não consegui encontrar a pasta de podcasts, ou dava falha de que tal diretório era inexistente
             fos = new FileOutputStream(f.getPath());
             BufferedOutputStream bos =  new BufferedOutputStream(fos);
 

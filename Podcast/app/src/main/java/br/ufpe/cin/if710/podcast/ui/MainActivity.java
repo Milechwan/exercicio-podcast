@@ -38,6 +38,7 @@ import br.ufpe.cin.if710.podcast.R;
 import br.ufpe.cin.if710.podcast.db.PodcastDBHelper;
 import br.ufpe.cin.if710.podcast.db.PodcastProvider;
 import br.ufpe.cin.if710.podcast.db.PodcastProviderContract;
+import br.ufpe.cin.if710.podcast.domain.ConexaoInternet;
 import br.ufpe.cin.if710.podcast.domain.ItemFeed;
 import br.ufpe.cin.if710.podcast.domain.XmlFeedParser;
 import br.ufpe.cin.if710.podcast.ui.adapter.XmlFeedAdapter;
@@ -51,6 +52,7 @@ public class MainActivity extends Activity {
     private ListView items;
     private BroadcastDownload broad;
     private Cursor c;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,7 +97,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    private class AdapterItemdb extends CursorAdapter { //adapter customizado necessário para carregar os itens do db
+    private class AdapterItemdb extends CursorAdapter { //adapter necessário para carregar os itens do db
         //passo 6
         ViewHolder vh;
         Context cont;
@@ -119,25 +121,26 @@ public class MainActivity extends Activity {
             vh.textViewPubDate.setText(pubdate);
             vh.textViewTitle.setText(title);
 
-          //  position = cursor.getPosition();
-            final int position = cursor.getPosition();
+
+            final int position = cursor.getPosition();//usado pois há diferença entre o índice do item clicado com o o índice apontado pelo cursor
             vh.textViewTitle.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) { //passo 5
                     Intent i = new Intent(cont,EpisodeDetailActivity.class);
                     i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);//essa flag é necessária pois o listener está sendo instanciado
                     //no próprio adapter e não numa activity
-                    cursor.moveToPosition(position);
+                    cursor.moveToPosition(position);//força mudança de posição do cursor para pegar informações o item clicado
                     i.putExtra("Titulo",cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_TITLE)));
                     i.putExtra("Descricao",cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DESC)));
                     i.putExtra("PubDate",cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DATE)));
-                    cont.startActivity(i);
+                    cont.startActivity(i);//redireciona para activity EpisodeDetailActivity
                 }
             });
             vh.btn_down.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     cursor.moveToPosition(position);
+                    //inicia service que fará o download do .mp3
                     ServiceDownloadDB.startActionEpi(cont,cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DOWNLOAD_LINK)));
                     Log.d("ID_ITEM_BTN",cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper._ID)));
                 }
@@ -148,6 +151,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onStart() {
         super.onStart();
+        //fazendo registro do receiver que diz respeito ao download do feed
         broad = new BroadcastDownload();
         IntentFilter filter = new IntentFilter("br.ufpe.cin.if710.podcast.service.download_done");
         registerReceiver(broad,filter);
@@ -158,27 +162,28 @@ public class MainActivity extends Activity {
     protected void onResume(){
         super.onResume();
 
-       try {//trocar para ver conexão com a internet
-           ContentResolver cr = getContentResolver();
-           c = cr.query(PodcastProviderContract.EPISODE_LIST_URI, new String[]{}, null, new String[]{}, null);
-           if (c.getCount() == 0) {
+        try {//trocar para ver conexão com a internet
+            ContentResolver cr = getContentResolver();
+            c = cr.query(PodcastProviderContract.EPISODE_LIST_URI, new String[]{}, null, new String[]{}, null);
+            if (c.getCount() == 0 || !ConexaoInternet.conectado(this)) { //o uso de getCount seria apenas para quando o aplicativo for executado pela primeira vez
                //chama método estático do service que é responsável pelo startService, que irá fazer o download do feed
-               ServiceDownloadDB.startActionFeed(this);
-           }else{
-               AdapterItemdb adapt = new AdapterItemdb(this,c);
-               items.setAdapter(adapt);
-           }
+                ServiceDownloadDB.startActionFeed(this);
+            }else{
+                //se não estiver conectado, apenas seta o adapter para que seja exibido o que já foi baixado (e já está no banco)
+                AdapterItemdb adapt = new AdapterItemdb(this,c);
+                items.setAdapter(adapt);
+            }
 
-       }catch (NullPointerException e){
-           e.printStackTrace();
-       }
+        }catch (NullPointerException e){
+            e.printStackTrace();
+        }
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        c.close();
-        unregisterReceiver(broad);
+        c.close();//fechando cursor usado no onResume aqui, pois se fosse feito no onPause, causaria problemas sobre usar cursor já fechado
+        unregisterReceiver(broad);//tirando o registro do receiver
 
     }
 
@@ -292,12 +297,6 @@ public class MainActivity extends Activity {
                 //ao finalizar o download dos itens do feed, o broadcast receiver simplesmente seta o cursor adapter
                 AdapterItemdb aidb = new AdapterItemdb(getApplicationContext(),c);
                 items.setAdapter(aidb);
-                /*btn_down.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        ServiceDownloadDB.startAction
-                    }
-                });*/
             }
         }));
   }

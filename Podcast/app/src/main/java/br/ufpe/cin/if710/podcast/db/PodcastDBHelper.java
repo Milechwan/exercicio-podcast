@@ -47,7 +47,7 @@ public class PodcastDBHelper extends SQLiteOpenHelper {
                     + EPISODE_DOWNLOAD_LINK + " TEXT NOT NULL, "
                     + EPISODE_FILE_URI + " TEXT)";
 
-
+    //colunas modificadas para apenas text pois a URI do arquivo só pode ser obtida após download do episódio
 
     @Override
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
