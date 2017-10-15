@@ -52,6 +52,7 @@ public class MainActivity extends Activity {
     private ListView items;
     private BroadcastDownload broad;
     private Cursor c;
+    private int posicaoClick;
 
 
     @Override
@@ -101,6 +102,7 @@ public class MainActivity extends Activity {
         //passo 6
         ViewHolder vh;
         Context cont;
+       // Cursor cursor_glo;
 
         public AdapterItemdb(Context context, Cursor cursor){
             super(context, cursor, 0);
@@ -111,6 +113,7 @@ public class MainActivity extends Activity {
             return LayoutInflater.from(context).inflate(R.layout.itemlista,parent,false); //usando o xml dado
         }
 
+
         @Override
         public void bindView(View view, Context context, final Cursor cursor) {
             vh = new ViewHolder(view); //padrão recomendado para o scroll
@@ -120,7 +123,6 @@ public class MainActivity extends Activity {
 
             vh.textViewPubDate.setText(pubdate);
             vh.textViewTitle.setText(title);
-
 
             final int position = cursor.getPosition();//usado pois há diferença entre o índice do item clicado com o o índice apontado pelo cursor
             vh.textViewTitle.setOnClickListener(new View.OnClickListener() {
@@ -136,15 +138,34 @@ public class MainActivity extends Activity {
                     cont.startActivity(i);//redireciona para activity EpisodeDetailActivity
                 }
             });
-            vh.btn_down.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    cursor.moveToPosition(position);
-                    //inicia service que fará o download do .mp3
-                    ServiceDownloadDB.startActionEpi(cont,cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DOWNLOAD_LINK)));
-                    Log.d("ID_ITEM_BTN",cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper._ID)));
-                }
-            });
+            //cursor.moveToPosition(position);
+            if(cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_FILE_URI))!=null){
+                //Toast.makeText(getApplicationContext(),"Baixado",Toast.LENGTH_SHORT).show();
+                vh.btn_down.setText(R.string.muda_btn);
+                vh.btn_down.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        cursor.moveToPosition(position);
+                        Intent i = new Intent(cont,EscutarPodcast.class);
+                        i.putExtra("URI_ARQ",cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_FILE_URI)));
+                        startActivity(i);
+                    }
+                });
+            }else{
+                vh.btn_down.setText(R.string.action_download);
+                vh.btn_down.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        cursor.moveToPosition(position);
+
+                        //inicia service que fará o download do .mp3
+                        posicaoClick = position;
+                        ServiceDownloadDB.startActionEpi(cont,cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DOWNLOAD_LINK)));
+
+                        // Log.d("ID_ITEM_BTN",cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper._ID)));
+                    }
+                });
+            }
         }
     }
 
@@ -167,6 +188,7 @@ public class MainActivity extends Activity {
             c = cr.query(PodcastProviderContract.EPISODE_LIST_URI, new String[]{}, null, new String[]{}, null);
             if (c.getCount() == 0 || !ConexaoInternet.conectado(this)) { //o uso de getCount seria apenas para quando o aplicativo for executado pela primeira vez
                //chama método estático do service que é responsável pelo startService, que irá fazer o download do feed
+                Toast.makeText(this,"Baixando o feed!",Toast.LENGTH_SHORT).show();
                 ServiceDownloadDB.startActionFeed(this);
             }else{
                 //se não estiver conectado, apenas seta o adapter para que seja exibido o que já foi baixado (e já está no banco)
@@ -280,7 +302,12 @@ public class MainActivity extends Activity {
       }
       @Override
       public void onReceive(Context context, Intent intent) {
-          runThread();
+          if(intent.getStringExtra("EPISODE")!=null){
+              runThreadEpi();
+          }else{
+              runThread();
+          }
+
       }
   }
 
@@ -301,15 +328,29 @@ public class MainActivity extends Activity {
         }));
   }
 
-//  public void runThreadEpi(){
-//      runOnUiThread(new Runnable() {
-//          @Override
-//          public void run() {
-//              AdapterItemdb adap = (AdapterItemdb) items.getAdapter();
-//              adap.vh.btn_down.setText(R.string.muda_btn);
-//          }
-//      });
-//  }
+  public void runThreadEpi(){
+      runOnUiThread(new Runnable() {
+          @Override
+          public void run() {
+              Toast.makeText(getApplicationContext(),"Episódio "+posicaoClick+" baixado!",Toast.LENGTH_SHORT).show();
+              ContentResolver cr = getContentResolver();
+              Cursor c = cr.query(PodcastProviderContract.EPISODE_LIST_URI,
+                      PodcastDBHelper.columns,
+                      null,
+                      new String[]{},
+                      null);
+              //ao finalizar o download dos itens do feed, o broadcast receiver simplesmente seta o cursor adapter
+              c.moveToPosition(posicaoClick);
+              AdapterItemdb aidb = new AdapterItemdb(getApplicationContext(),c);
+              items.setAdapter(aidb);
+              aidb.vh.btn_down.setText(R.string.muda_btn);
+
+
+              //adap.vh.btn_down.setText(R.string.muda_btn);
+
+          }
+      });
+  }
 
     //TODO Opcional - pesquise outros meios de obter arquivos da internet - não está sendo utilizado
     private String getRssFeed(String feed) throws IOException {

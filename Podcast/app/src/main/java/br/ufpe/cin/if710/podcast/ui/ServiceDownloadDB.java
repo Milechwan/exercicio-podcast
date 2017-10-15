@@ -95,7 +95,8 @@ public class ServiceDownloadDB extends IntentService {
 
                 }
                 //assim que terminar, manda brodcast para setar o adapter
-                sendBroadcast(new Intent("br.ufpe.cin.if710.podcast.service.download_done"));
+                Intent in = new Intent("br.ufpe.cin.if710.podcast.service.download_done");
+                sendBroadcast(in);
 
 
             } else if (ACTION_Epi.equals(action)) {
@@ -112,11 +113,17 @@ public class ServiceDownloadDB extends IntentService {
                 File epi = baixaEpisodio(param1);
                 ContentResolver cr = getContentResolver();
                 ContentValues cv = new ContentValues();
+                //como antes não era possível pegar a URI do arquivo, agora usa-se o método .toURI() e finalmente o banco pode possuir esse valor
                 cv.put(PodcastDBHelper.EPISODE_FILE_URI,epi.toURI().toString());
                 cr.update(PodcastProviderContract.EPISODE_LIST_URI,
                         cv,
                         PodcastDBHelper.EPISODE_DOWNLOAD_LINK+"=?",
                         new String[]{param1});
+               // Intent in = new Intent("br.ufpe.cin.if710.podcast.service.download_done");
+                //in.putExtra("EPISODE","down_episode");
+                //sendBroadcast(in);
+                //basta o update para inserir este valor na coluna de FILE_URI
+               // sendBroadcast();
 //                try{
 //                    Cursor c =cr.query(PodcastProviderContract.EPISODE_LIST_URI,PodcastDBHelper.columns,PodcastDBHelper.EPISODE_DOWNLOAD_LINK+"=?",new String[]{param1},null);
 //                    if(c.moveToFirst()){
@@ -220,7 +227,7 @@ public class ServiceDownloadDB extends IntentService {
      * parameters.
      */
     private void handleActionDownload(String param1) {
-        // TODO: Handle action Foo
+
         try{
             String dados = new String(getDataFromURL(param1),"UTF-8");
             feed_itens = XmlFeedParser.parse(dados);

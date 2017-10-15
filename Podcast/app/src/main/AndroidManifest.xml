@@ -3,8 +3,8 @@
     package="br.ufpe.cin.if710.podcast">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/><!--para fazer download dos episódios-->
-    <!--as permissões abaixo são para testar conexão com internet-->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" /> <!-- para fazer download dos episódios -->
+    <!-- as permissões abaixo são para testar conexão com internet -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 
@@ -32,14 +32,22 @@
 
         <activity android:name=".ui.EpisodeDetailActivity" />
 
-        <!--<receiver android:name=".ui.MainActivity$BroadcastDownload">
+        <!--
+        <receiver android:name=".ui.MainActivity$BroadcastDownload">
             <intent-filter>
                 <action android:name="br.ufpe.cin.if710.podcast.service.download_done"/>
             </intent-filter>
-        </receiver>-->
+        </receiver>
+        -->
         <service
             android:name=".ui.ServiceDownloadDB"
-            android:exported="false"/>
+            android:exported="false" />
+        <service
+            android:name=".ui.ServicePlayPod"
+            android:enabled="true"
+            android:exported="true" />
+
+        <activity android:name=".ui.EscutarPodcast"></activity>
     </application>
 
 </manifest>
