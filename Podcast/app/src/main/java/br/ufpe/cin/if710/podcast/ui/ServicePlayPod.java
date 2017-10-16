@@ -7,6 +7,8 @@ import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
 
+import java.io.File;
+
 public class ServicePlayPod extends Service {
 
     public final String TAG = "PlayerPodcast";
@@ -28,10 +30,20 @@ public class ServicePlayPod extends Service {
     public int onStartCommand(Intent intent, int flags, int startId){
         String arq = intent.getExtras().getString("URI_ARQUIVO");
         arquivo = Uri.parse(arq);
+        //o media player só é criado aqui pois precisa do extra do intent para pegar a URI do arquivo
         if(arquivo!=null){
             media_player = MediaPlayer.create(this,arquivo);
+            //o OnCompletionListener é justamente para saber se a música que está sendo tocada acabou, e poder excluir o arquivo em seguida
+            media_player.setOnCompletionListener( new MediaPlayer.OnCompletionListener(){
+                public void onCompletion(MediaPlayer mp){
+                    media_player.release();//dando release para que não fique em aberto
+                    media_player = null;
+                    File f = new File(arquivo.getPath());//pegando o arquivo para deletá-lo
+                    boolean isDeleted = f.delete();
+                }
+            });
         }
-        return START_STICKY;
+        return START_NOT_STICKY;
     }
 
     @Override

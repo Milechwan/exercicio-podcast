@@ -9,9 +9,9 @@ import android.net.NetworkInfo;
  */
 
 public class ConexaoInternet {
-//    public ConexaoInternet(){
+
 //classe com método para checar se o usuário está de fato conectado à internet
-//    }
+
     public static boolean conectado(Context context){
         final ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         //pega manager que trata de conectividade em geral do aparelho, como wifi, 3g, bluetooth etc

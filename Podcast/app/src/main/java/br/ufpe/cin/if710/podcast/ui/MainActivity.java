@@ -138,7 +138,9 @@ public class MainActivity extends Activity {
                     cont.startActivity(i);//redireciona para activity EpisodeDetailActivity
                 }
             });
-            //cursor.moveToPosition(position);
+
+            //aqui verifica quais itens já foram baixados, para que o texto do botão seja 'escutar' e ao clicá-lo,
+            //iniciar o service do media player
             if(cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_FILE_URI))!=null){
                 //Toast.makeText(getApplicationContext(),"Baixado",Toast.LENGTH_SHORT).show();
                 vh.btn_down.setText(R.string.muda_btn);
@@ -148,6 +150,7 @@ public class MainActivity extends Activity {
                         cursor.moveToPosition(position);
                         Intent i = new Intent(cont,EscutarPodcast.class);
                         i.putExtra("URI_ARQ",cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_FILE_URI)));
+                        //repassa a string da URI do arquivo para a activity criada com os botões de play e pause do episódio
                         startActivity(i);
                     }
                 });
@@ -161,7 +164,6 @@ public class MainActivity extends Activity {
                         //inicia service que fará o download do .mp3
                         posicaoClick = position;
                         ServiceDownloadDB.startActionEpi(cont,cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DOWNLOAD_LINK)));
-
                         // Log.d("ID_ITEM_BTN",cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper._ID)));
                     }
                 });
@@ -186,7 +188,7 @@ public class MainActivity extends Activity {
         try {//trocar para ver conexão com a internet
             ContentResolver cr = getContentResolver();
             c = cr.query(PodcastProviderContract.EPISODE_LIST_URI, new String[]{}, null, new String[]{}, null);
-            if (c.getCount() == 0 || !ConexaoInternet.conectado(this)) { //o uso de getCount seria apenas para quando o aplicativo for executado pela primeira vez
+            if (c.getCount() == 0 || ConexaoInternet.conectado(this)) { //o uso de getCount seria apenas para quando o aplicativo for executado pela primeira vez
                //chama método estático do service que é responsável pelo startService, que irá fazer o download do feed
                 Toast.makeText(this,"Baixando o feed!",Toast.LENGTH_SHORT).show();
                 ServiceDownloadDB.startActionFeed(this);
@@ -209,86 +211,6 @@ public class MainActivity extends Activity {
 
     }
 
-  /*  private class DownloadXmlTask extends AsyncTask<String, Void, List<ItemFeed>> {
-        @Override
-        protected void onPreExecute() {
-            Toast.makeText(getApplicationContext(), "iniciando...", Toast.LENGTH_SHORT).show();
-        }
-
-        @Override
-        protected List<ItemFeed> doInBackground(String... params) {
-            List<ItemFeed> itemList = new ArrayList<>();
-            try {
-                itemList = XmlFeedParser.parse(getRssFeed(params[0]));
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (XmlPullParserException e) {
-                e.printStackTrace();
-            }
-            return itemList;
-        }
-
-        @Override
-        protected void onPostExecute(List<ItemFeed> feed) {
-            Toast.makeText(getApplicationContext(), "terminando...", Toast.LENGTH_SHORT).show();
-
-            //Adapter Personalizado
-            XmlFeedAdapter adapter = new XmlFeedAdapter(getApplicationContext(), R.layout.itemlista, feed);
-
-            //atualizar o list view
-            items.setAdapter(adapter);
-            items.setTextFilterEnabled(true);
-
-            //passo 3 e 4
-            ContentResolver cr = getContentResolver();
-            ContentValues cv = new ContentValues();
-
-            for(int i=0;i<feed.size();i++){
-                ItemFeed if_ = feed.get(i);
-                cv.put(PodcastDBHelper.EPISODE_LINK,if_.getLink());
-                cv.put(PodcastDBHelper.EPISODE_DATE,if_.getPubDate());
-                cv.put(PodcastDBHelper.EPISODE_TITLE,if_.getTitle());
-                cv.put(PodcastDBHelper.EPISODE_DOWNLOAD_LINK,if_.getDownloadLink());
-                cv.put(PodcastDBHelper.EPISODE_DESC,if_.getDescription());
-                //Log.d("CV",cv.toString());
-                int x = helper.getWritableDatabase().update(PodcastDBHelper.DATABASE_TABLE,
-                        cv,
-                        PodcastDBHelper.EPISODE_DOWNLOAD_LINK+"=?",
-                        new String[]{if_.getDownloadLink()});
-                if(x==0) helper.getWritableDatabase().insert(PodcastDBHelper.DATABASE_TABLE,null,cv);
-           {//se ele não encontrar na tabela nenhum item com tal link, pode inserir
-            PodcastProvider pp = new PodcastProvider();            pp.setDb_help(getApplicationContext());
-            PodcastDBHelper helper = pp.getDBhelper();
-            ContentValues cv = new ContentValues();
-            for(int i=0;i<feed.size();i++){
-                ItemFeed if_ = feed.get(i);
-                cv.put(PodcastDBHelper.EPISODE_LINK,if_.getLink());
-                cv.put(PodcastDBHelper.EPISODE_DATE,if_.getPubDate());
-                cv.put(PodcastDBHelper.EPISODE_TITLE,if_.getTitle());
-                cv.put(PodcastDBHelper.EPISODE_DOWNLOAD_LINK,if_.getDownloadLink());
-                cv.put(PodcastDBHelper.EPISODE_DESC,if_.getDescription());
-                int x = helper.getWritableDatabase().update(PodcastDBHelper.DATABASE_TABLE,
-                        cv,
-                        PodcastDBHelper.EPISODE_DOWNLOAD_LINK+"=?",
-                        new String[]{if_.getDownloadLink()});
-                if(x==0) helper.getWritableDatabase().insert(PodcastDBHelper.DATABASE_TABLE,null,cv); //se x for 0, significa que nenhuma linha da tabela foi modificada
-                cv.clear();
-                //estou devendo pegar a URI
-
-            }
-            items.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                    XmlFeedAdapter adapter = (XmlFeedAdapter) parent.getAdapter();
-                    ItemFeed item = adapter.getItem(position);
-                    String msg = item.getTitle() + " " + item.getLink();
-                    Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
-                }
-            });
-
-        }
-    }
-*/
   @Override
   public void onPause(){
       super.onPause();
@@ -302,12 +224,7 @@ public class MainActivity extends Activity {
       }
       @Override
       public void onReceive(Context context, Intent intent) {
-          if(intent.getStringExtra("EPISODE")!=null){
-              runThreadEpi();
-          }else{
-              runThread();
-          }
-
+          runThread();
       }
   }
 
@@ -321,57 +238,28 @@ public class MainActivity extends Activity {
                         null,
                         new String[]{},
                         null);
-                //ao finalizar o download dos itens do feed, o broadcast receiver simplesmente seta o cursor adapter
+
                 AdapterItemdb aidb = new AdapterItemdb(getApplicationContext(),c);
                 items.setAdapter(aidb);
+                //como as duas actions implementadas no ServiceDownloadDB enviam broadcast para um mesmo receiver e ele só executa uma função
+                //a partir desse try, ele verifica se o episódio foi baixado para que um toast seja exibido
+                try{
+                    c.moveToPosition(posicaoClick);
+                    String pos = posicaoClick+"";
+                    c = cr.query(PodcastProviderContract.EPISODE_LIST_URI,
+                            new String[]{PodcastDBHelper.EPISODE_FILE_URI},
+                            PodcastDBHelper._ID+"=?",
+                            new String[]{pos},
+                            null);
+                    if(c.moveToFirst()) {
+                        Toast.makeText(getApplicationContext(),"Episódio "+posicaoClick+" baixado!",Toast.LENGTH_SHORT).show();
+                    }
+                }catch (NullPointerException e){
+                    e.printStackTrace();
+                }
+
             }
         }));
   }
 
-  public void runThreadEpi(){
-      runOnUiThread(new Runnable() {
-          @Override
-          public void run() {
-              Toast.makeText(getApplicationContext(),"Episódio "+posicaoClick+" baixado!",Toast.LENGTH_SHORT).show();
-              ContentResolver cr = getContentResolver();
-              Cursor c = cr.query(PodcastProviderContract.EPISODE_LIST_URI,
-                      PodcastDBHelper.columns,
-                      null,
-                      new String[]{},
-                      null);
-              //ao finalizar o download dos itens do feed, o broadcast receiver simplesmente seta o cursor adapter
-              c.moveToPosition(posicaoClick);
-              AdapterItemdb aidb = new AdapterItemdb(getApplicationContext(),c);
-              items.setAdapter(aidb);
-              aidb.vh.btn_down.setText(R.string.muda_btn);
-
-
-              //adap.vh.btn_down.setText(R.string.muda_btn);
-
-          }
-      });
-  }
-
-    //TODO Opcional - pesquise outros meios de obter arquivos da internet - não está sendo utilizado
-    private String getRssFeed(String feed) throws IOException {
-        InputStream in = null;
-        String rssFeed = "";
-        try {
-            URL url = new URL(feed);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            in = conn.getInputStream();
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            byte[] buffer = new byte[1024];
-            for (int count; (count = in.read(buffer)) != -1; ) {
-                out.write(buffer, 0, count);
-            }
-            byte[] response = out.toByteArray();
-            rssFeed = new String(response, "UTF-8");
-        } finally {
-            if (in != null) {
-                in.close();
-            }
-        }
-        return rssFeed;
-    }
 }

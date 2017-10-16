@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -101,15 +102,6 @@ public class ServiceDownloadDB extends IntentService {
 
             } else if (ACTION_Epi.equals(action)) {
                 final String param1 = intent.getStringExtra(TAG_EPISODE);
-//                File root = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-//                root.mkdirs();
-//                File output = new File(root, intent.getData().getLastPathSegment());
-//                if (output.exists()) {
-//                    output.delete();
-//                }
-
-               // i = intent;
-                    //
                 File epi = baixaEpisodio(param1);
                 ContentResolver cr = getContentResolver();
                 ContentValues cv = new ContentValues();
@@ -119,34 +111,7 @@ public class ServiceDownloadDB extends IntentService {
                         cv,
                         PodcastDBHelper.EPISODE_DOWNLOAD_LINK+"=?",
                         new String[]{param1});
-               // Intent in = new Intent("br.ufpe.cin.if710.podcast.service.download_done");
-                //in.putExtra("EPISODE","down_episode");
-                //sendBroadcast(in);
-                //basta o update para inserir este valor na coluna de FILE_URI
-               // sendBroadcast();
-//                try{
-//                    Cursor c =cr.query(PodcastProviderContract.EPISODE_LIST_URI,PodcastDBHelper.columns,PodcastDBHelper.EPISODE_DOWNLOAD_LINK+"=?",new String[]{param1},null);
-//                    if(c.moveToFirst()){
-//                        String down = c.getString(c.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DOWNLOAD_LINK));
-//                        String dat = c.getString(c.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DATE));
-//                        String tit = c.getString(c.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_TITLE));
-//                        String urr = c.getString(c.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_FILE_URI));
-//                        String d = c.getString(c.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DESC));
-//                        Log.d("UPDATE_CURSOR",down+" "+dat+" "+tit+" "+urr+" "+d);
-//                        c.close();
-//                    }
-//                }catch (NullPointerException e){
-//                    e.printStackTrace();
-//                }
-
-
-               // int g=0;
-                    //handleActionBaz(bos);
-//                }catch(IOException e){
-//                    e.printStackTrace();
-//                }
-
-               // final String param2 = intent.getStringExtra(EXTRA_PARAM2);
+                sendBroadcast(new Intent("br.ufpe.cin.if710.podcast.service.download_done"));
 
             }
         }
