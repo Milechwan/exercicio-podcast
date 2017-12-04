@@ -188,7 +188,7 @@ public class MainActivity extends Activity {
         try {//trocar para ver conexão com a internet
             ContentResolver cr = getContentResolver();
             c = cr.query(PodcastProviderContract.EPISODE_LIST_URI, new String[]{}, null, new String[]{}, null);
-            if (c.getCount() == 0 || ConexaoInternet.conectado(this)) { //o uso de getCount seria apenas para quando o aplicativo for executado pela primeira vez
+            if (c.getCount() == 0 && ConexaoInternet.conectado(this)) { //o uso de getCount seria apenas para quando o aplicativo for executado pela primeira vez
                //chama método estático do service que é responsável pelo startService, que irá fazer o download do feed
                 Toast.makeText(this,"Baixando o feed!",Toast.LENGTH_SHORT).show();
                 ServiceDownloadDB.startActionFeed(this);

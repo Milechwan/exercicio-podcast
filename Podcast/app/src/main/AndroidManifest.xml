@@ -44,10 +44,9 @@
             android:exported="false" />
         <service
             android:name=".ui.ServicePlayPod"
-            android:enabled="true"
-            android:exported="true" />
+            android:enabled="true"/>
 
-        <activity android:name=".ui.EscutarPodcast"></activity>
+        <activity android:name=".ui.EscutarPodcast"/>
     </application>
 
 </manifest>

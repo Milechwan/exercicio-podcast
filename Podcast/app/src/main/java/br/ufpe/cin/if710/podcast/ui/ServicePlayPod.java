@@ -6,6 +6,7 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
+import android.util.Log;
 
 import java.io.File;
 
@@ -22,14 +23,20 @@ public class ServicePlayPod extends Service {
     @Override
     public void onCreate(){
         super.onCreate();
-
-
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId){
         String arq = intent.getExtras().getString("URI_ARQUIVO");
+        Log.d("ARQUIVO ON_START_CMD",arq);
         arquivo = Uri.parse(arq);
+        boolean b = arquivo!=null;
+        if(b){
+            arq = "true";
+        }else{
+            arq = "false";
+        }
+        Log.d("ARQUI NULO ON_START_CMD",arq);
         //o media player só é criado aqui pois precisa do extra do intent para pegar a URI do arquivo
         if(arquivo!=null){
             media_player = MediaPlayer.create(this,arquivo);
@@ -43,7 +50,7 @@ public class ServicePlayPod extends Service {
                 }
             });
         }
-        return START_NOT_STICKY;
+        return START_STICKY;
     }
 
     @Override

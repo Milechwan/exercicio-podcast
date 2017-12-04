@@ -18,36 +18,33 @@ public class EscutarPodcast extends Activity {
     ServicePlayPod spp;
     Button btn_play;
     Button btn_pause;
+    String ext;
     boolean isBound = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.play_episode);
-        btn_play = (Button) findViewById(R.id.botaoPlay);
         btn_pause = (Button) findViewById(R.id.botaoPause);
         //iniciar service que trata o media player
         Intent i = getIntent();
-        String ext = i.getExtras().getString("URI_ARQ");
+        ext = i.getExtras().getString("URI_ARQ");
         final Intent musicIntent = new Intent(this, ServicePlayPod.class);
         musicIntent.putExtra("URI_ARQUIVO",ext);
+        stopService(musicIntent);
         startService(musicIntent);
-
-        btn_play.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if(isBound){
-                    spp.playEpi();
-                }else{
-                    Toast.makeText(getApplicationContext(),"Não tem bind ainda :<",Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
 
         btn_pause.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                String auxBtn = btn_pause.getText().toString();
                 if(isBound){
-                    spp.pauseEpi();
+                    if(auxBtn.equals("Pausar")){
+                        spp.pauseEpi();
+                        btn_pause.setText("Tocar");
+                    }else if(auxBtn.equals("Tocar")) {
+                        spp.playEpi();
+                        btn_pause.setText("Pausar");
+                    }
                 }else{
                     Toast.makeText(getApplicationContext(),"Não tem bind ainda :<", Toast.LENGTH_SHORT).show();
                 }
@@ -60,6 +57,7 @@ public class EscutarPodcast extends Activity {
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
             spp = ((ServicePlayPod.BinderPodcast)iBinder).getService();
             isBound=true;
+            spp.playEpi();
         }
 
         @Override
@@ -70,20 +68,21 @@ public class EscutarPodcast extends Activity {
     };
 
     @Override
-    protected void onStart(){
-        super.onStart();
+    protected void onResume(){
+        super.onResume();
         if(!isBound){
             Toast.makeText(this,"Binding...",Toast.LENGTH_LONG).show();
             Intent bindIntent = new Intent(this,ServicePlayPod.class);
+            bindIntent.putExtra("URI_ARQUIVO",ext);
             isBound = bindService(bindIntent,serv_conn, Context.BIND_AUTO_CREATE);
         }
     }
 
     @Override
     protected void onStop(){
-        super.onStop();
         Toast.makeText(this,"Unbinding...",Toast.LENGTH_LONG).show();
         unbindService(serv_conn);
         isBound=false;
+        super.onStop();
     }
 }
