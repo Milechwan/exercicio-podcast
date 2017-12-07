@@ -1,12 +1,15 @@
 package br.ufpe.cin.if710.podcast.ui;
 
 import android.app.Activity;
+import android.content.ContentResolver;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
 
 import br.ufpe.cin.if710.podcast.R;
+import br.ufpe.cin.if710.podcast.db.PodcastDBHelper;
+import br.ufpe.cin.if710.podcast.db.PodcastProviderContract;
 
 public class SettingsActivity extends Activity {
     public static final String FEED_LINK = "feedlink";
@@ -15,6 +18,7 @@ public class SettingsActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
+        getFragmentManager().beginTransaction().add(android.R.id.content,new FeedPreferenceFragment()).commit();
     }
 
     public static class FeedPreferenceFragment extends PreferenceFragment {
@@ -26,7 +30,6 @@ public class SettingsActivity extends Activity {
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
-
             // carrega preferences de um recurso XML em /res/xml
             addPreferencesFromResource(R.xml.preferences);
 
@@ -37,7 +40,11 @@ public class SettingsActivity extends Activity {
             mListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
                 @Override
                 public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-                    feedLinkPref.setSummary(sharedPreferences.getString(FEED_LINK, getActivity().getResources().getString(R.string.feed_link)));
+                    if(isAdded()){
+                        ContentResolver cr = getActivity().getContentResolver();
+                        cr.delete(PodcastProviderContract.EPISODE_LIST_URI,null,null);
+                    }
+                    //feedLinkPref.setSummary(sharedPreferences.getString(FEED_LINK, getActivity().getResources().getString(R.string.feed_link)));
                 }
             };
 
@@ -48,7 +55,7 @@ public class SettingsActivity extends Activity {
             prefs.registerOnSharedPreferenceChangeListener(mListener);
 
             // força chamada ao metodo de callback para exibir link atual
-            mListener.onSharedPreferenceChanged(prefs, FEED_LINK);
+           // mListener.onSharedPreferenceChanged(prefs, FEED_LINK);
 
         }
     }

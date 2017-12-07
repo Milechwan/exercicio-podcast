@@ -27,6 +27,10 @@ public class PodcastProvider extends ContentProvider {
     public int delete(Uri uri, String selection, String[] selectionArgs) throws NullPointerException{
         // Implement this to handle requests to delete one or more rows.
        // if(checaUriEpisode(uri)){
+        /*if(selection==null && selectionArgs==null){
+            db_help.deletar(getContext()); //para o sharedpreferences trocar de feed, deletar o banco
+            return 0;
+        }*/
         index_del = db_help.getWritableDatabase().delete(PodcastDBHelper.DATABASE_TABLE,selection,selectionArgs);
 
         //throw new UnsupportedOperationException("Not yet implemented");
@@ -92,4 +96,5 @@ public class PodcastProvider extends ContentProvider {
         //}
         //return -1;
     }
+
 }

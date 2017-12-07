@@ -5,9 +5,11 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Environment;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -52,7 +54,6 @@ public class ServiceDownloadDB extends IntentService {
     public static void startActionFeed(Context context) {
         Intent intent = new Intent(context, ServiceDownloadDB.class);
         intent.setAction(ACTION_Download);
-        intent.putExtra(TAG_FEED, RSS_FEED_URL);
         //intent.putExtra(EXTRA_PARAM2, param2);
         context.startService(intent);
     }
@@ -70,8 +71,10 @@ public class ServiceDownloadDB extends IntentService {
         if (intent != null) {
             final String action = intent.getAction();
             if (ACTION_Download.equals(action)) {//nesta action, faz-se o download do feed
-                final String param1 = intent.getStringExtra(TAG_FEED);
-                handleActionDownload(param1);
+                final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+                String defaultt = getResources().getString(R.string.feed_link);
+                String feed = sharedPreferences.getString(getString(R.string.link_feed),defaultt);
+                handleActionDownload(feed);
                 //daqui em diante, faz-se a inserção no banco de dados
                 ContentResolver cr = getContentResolver(); //responsável por lidar com o PodcastProvider
                 ContentValues cv = new ContentValues();

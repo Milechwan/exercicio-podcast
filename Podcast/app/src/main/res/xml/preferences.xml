@@ -5,7 +5,7 @@
     <EditTextPreference
         android:dialogTitle="@string/pref_title"
         android:dialogMessage="@string/pref_msg"
-        android:key="feedlink"
+        android:key="@string/link_feed"
         android:negativeButtonText="@string/cancel"
         android:positiveButtonText="@string/change"
         android:title="@string/pref_desc"

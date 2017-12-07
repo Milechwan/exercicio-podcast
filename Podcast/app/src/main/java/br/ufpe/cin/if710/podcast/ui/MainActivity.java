@@ -194,8 +194,10 @@ public class MainActivity extends Activity {
                 ServiceDownloadDB.startActionFeed(this);
             }else{
                 //se não estiver conectado, apenas seta o adapter para que seja exibido o que já foi baixado (e já está no banco)
-                AdapterItemdb adapt = new AdapterItemdb(this,c);
-                items.setAdapter(adapt);
+                if(!ConexaoInternet.conectado(this) || c.getCount()>0) {
+                    AdapterItemdb adapt = new AdapterItemdb(this,c);
+                    items.setAdapter(adapt);
+                }
             }
 
         }catch (NullPointerException e){

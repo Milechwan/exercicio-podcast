@@ -43,7 +43,7 @@ public class PodcastDBHelper extends SQLiteOpenHelper {
                     + EPISODE_TITLE + " TEXT NOT NULL, "
                     + EPISODE_DATE + " TEXT NOT NULL, "
                     + EPISODE_LINK + " TEXT, "
-                    + EPISODE_DESC + " TEXT NOT NULL, "
+                    + EPISODE_DESC + " TEXT, "
                     + EPISODE_DOWNLOAD_LINK + " TEXT NOT NULL, "
                     + EPISODE_FILE_URI + " TEXT)";
 
@@ -57,5 +57,9 @@ public class PodcastDBHelper extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i1) {
         throw new RuntimeException("inutilizado");
+    }
+
+    public void deletar(Context c){
+        c.deleteDatabase(DATABASE_NAME);
     }
 }
