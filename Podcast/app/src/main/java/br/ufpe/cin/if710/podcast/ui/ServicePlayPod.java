@@ -26,10 +26,11 @@ public class ServicePlayPod extends Service {
     }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId){
+    public int onStartCommand(Intent intent, int flags, final int startId){
         String arq = intent.getExtras().getString("URI_ARQUIVO");
         Log.d("ARQUIVO ON_START_CMD",arq);
         arquivo = Uri.parse(arq);
+
         boolean b = arquivo!=null;
         if(b){
             arq = "true";
@@ -40,9 +41,11 @@ public class ServicePlayPod extends Service {
         //o media player só é criado aqui pois precisa do extra do intent para pegar a URI do arquivo
         if(arquivo!=null){
             media_player = MediaPlayer.create(this,arquivo);
+            media_player.setLooping(false);
             //o OnCompletionListener é justamente para saber se a música que está sendo tocada acabou, e poder excluir o arquivo em seguida
             media_player.setOnCompletionListener( new MediaPlayer.OnCompletionListener(){
                 public void onCompletion(MediaPlayer mp){
+                    stopSelf(startId);
                     media_player.release();//dando release para que não fique em aberto
                     media_player = null;
                     File f = new File(arquivo.getPath());//pegando o arquivo para deletá-lo
