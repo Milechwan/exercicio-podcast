@@ -54,9 +54,17 @@ public class SettingsActivity extends Activity {
             // registra o listener no objeto SharedPreferences
             prefs.registerOnSharedPreferenceChangeListener(mListener);
 
+
             // força chamada ao metodo de callback para exibir link atual
            // mListener.onSharedPreferenceChanged(prefs, FEED_LINK);
 
+        }
+
+        @Override
+        public void onDestroy(){
+            SharedPreferences prefs = getPreferenceManager().getSharedPreferences();
+            prefs.unregisterOnSharedPreferenceChangeListener(mListener);
+            super.onDestroy();
         }
     }
 }
