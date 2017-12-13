@@ -25,6 +25,14 @@ public class Episode {
     private String downloadLink;
     private String downloadUri;
 
+    public int get_id(){
+        return _id;
+    }
+
+    public void set_id(int _id) {
+        this._id = _id;
+    }
+
     public String getTitle() {
         return title;
     }
