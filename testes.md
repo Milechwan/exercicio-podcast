@@ -1,8 +1,8 @@
-#Testes
+# Testes
 
-##GUI##
+## GUI ##
 
-####Main Activity####
+#### Main Activity
 
 Foram feitos dois testes nesta activity, os quais:
 
