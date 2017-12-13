@@ -11,4 +11,9 @@ Android do aparelho: 6.0
 Analisando as imagens salvas na pasta "android-profiler", em relação à memória, temos os seguintes valores máximos atingidos:
 
 + Dando scroll na lista de episódios, baixando apenas um e colocando para tocar, o espaço máximo não foi além de 40,87mb (aos 44s, provavelmente enquanto baixava o episódio).
+
+  - O maior uso total de memória percebido gira em torno dos 35mb depois de ter baixado o episódio, sem haver com prometimento em relação ao uso de espaço.
+
 + Cenário de troca de feed via SharedPreference e 4 downloads simultâneos, além de ir novamente para EpisodeDetailsActivity e dar scroll na lista
+
+  - Com 1m32s, o uso de memória começa a crescer à medida em que os episódios vão sendo colocados para baixar, atingindo os 48mb com mais de 3m de funcionamento do aplicativo. Um cenário como esse não é problemático com celulares com quantidade razoável de memória, porém é algo a ser melhor observado em aparelhos com quantidade crítica de memória.  
