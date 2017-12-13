@@ -7,6 +7,8 @@ Usando Leak Canary, foi detectado um memory leak referente à activity com o Pre
 ### Android Profiler
 
 Android do aparelho: 6.0
+
 Analisando as imagens salvas na pasta "android-profiler", em relação à memória, temos os seguintes valores máximos atingidos:
-	+ Dando scroll na lista de episódios, baixando apenas um e colocando para tocar, o espaço máximo não foi além de 40,87mb (aos 44s, provavelmente enquanto baixava o episódio).
-	+ Cenário de troca de feed via SharedPreference e 4 downloads simultâneos, além de ir novamente para EpisodeDetailsActivity e dar scroll na lista
+
++ Dando scroll na lista de episódios, baixando apenas um e colocando para tocar, o espaço máximo não foi além de 40,87mb (aos 44s, provavelmente enquanto baixava o episódio).
++ Cenário de troca de feed via SharedPreference e 4 downloads simultâneos, além de ir novamente para EpisodeDetailsActivity e dar scroll na lista
