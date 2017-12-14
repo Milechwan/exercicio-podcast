@@ -4,7 +4,7 @@
 
 #### Main Activity
 
-Foram feitos dois testes nesta activity, os quais:
+Foram feitos dois testes nesta activity, antes de utilizar Architecture Component, os quais:
 
 01. Para verificar, após o scroll, se o item clicado se encontra na posição 1: 
 
