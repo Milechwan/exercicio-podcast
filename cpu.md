@@ -12,4 +12,7 @@ Temos os seguintes cenários para valores máximos atingidos:
 
 + Cenário de troca de feed via SharedPreference e 4 downloads simultâneos, além de ir novamente para EpisodeDetailsActivity e dar scroll na lista  
   
-  - Já neste caso, o uso de CPU mostrou-se constante enquanto os downloads dos episódios eram feitos, e mesmo colocando um deles para tocar, não houve grandes mudanças/oscilações no uso de CPU, ficando entre 20 e 30% e não mais do que isso.  
+  - Já neste caso, o uso de CPU mostrou-se constante enquanto os downloads dos episódios eram feitos, e mesmo colocando um deles para tocar, não houve grandes mudanças/oscilações no uso de CPU, ficando entre 20 e 30% e não mais do que isso. 
+
++ Cenário ouvindo episódio até o final com a tela na activity EscutarPodcast (até o celular bloquear a tela após 2min):   
+  - O uso da CPU só se mostra presente ao iniciar o app, como esperado, e ao dar scroll na lista do feed até apertar o botão de 'Escutar', a porcentagem fica entre 10 e 12%, depois disso estabiliza em 0%. Não foi apresentado uso de CPU por outros processos/aplicativos. 

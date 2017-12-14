@@ -1,4 +1,4 @@
-## Memória
+# Memória
 
 ### Leak Canary
 
@@ -17,3 +17,6 @@ Analisando as imagens salvas na pasta "android-profiler", em relação à memór
 + Cenário de troca de feed via SharedPreference e 4 downloads simultâneos, além de ir novamente para EpisodeDetailsActivity e dar scroll na lista
 
   - Com 1m32s, o uso de memória começa a crescer à medida em que os episódios vão sendo colocados para baixar, atingindo os 48mb com mais de 3m de funcionamento do aplicativo. Um cenário como esse não é problemático com celulares com quantidade razoável de memória, porém é algo a ser melhor observado em aparelhos com quantidade crítica de memória.  
+
++ Cenário ouvindo episódio até o final com a tela na activity EscutarPodcast (até o celular bloquear a tela):
+  - Como pode-se ver no gráfico, ao ainda procurar o episódio na lista e selecionar 'Escutar', o uso de memória chega até 25,59mb, e enquanto o episódio está tocando com a tela em primeiro plano, esse valor se mantém. Mas logo que a tela apaga (bloqueio automático do celular), o uso de memória cai em 3mb. 
