@@ -8,14 +8,22 @@ import android.arch.persistence.room.PrimaryKey;
  */
 @Entity
 public class Episode {
+    public int get_id() {
+        return _id;
+    }
+
+    public void set_id(int _id) {
+        this._id = _id;
+    }
+
     /*public final static String _ID = "_id";
-    public final static String EPISODE_TITLE = "title";
-    public final static String EPISODE_DATE = "pubDate";
-    public final static String EPISODE_LINK = "link";
-    public final static String EPISODE_DESC = "description";
-    public final static String EPISODE_DOWNLOAD_LINK = "downloadLink";
-    public final static String EPISODE_FILE_URI = "downloadUri";
-*/
+        public final static String EPISODE_TITLE = "title";
+        public final static String EPISODE_DATE = "pubDate";
+        public final static String EPISODE_LINK = "link";
+        public final static String EPISODE_DESC = "description";
+        public final static String EPISODE_DOWNLOAD_LINK = "downloadLink";
+        public final static String EPISODE_FILE_URI = "downloadUri";
+    */
     @PrimaryKey(autoGenerate = true)
     private int _id;
     private String title;

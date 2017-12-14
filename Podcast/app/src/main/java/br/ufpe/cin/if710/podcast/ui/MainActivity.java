@@ -1,14 +1,13 @@
 package br.ufpe.cin.if710.podcast.ui;
 
 import android.app.Activity;
+import android.arch.persistence.room.Room;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.database.Cursor;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -18,6 +17,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CursorAdapter;
 import android.widget.ListView;
@@ -35,6 +35,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import br.ufpe.cin.if710.podcast.R;
+import br.ufpe.cin.if710.podcast.db.Episode;
+import br.ufpe.cin.if710.podcast.db.EpisodeDatabase;
 import br.ufpe.cin.if710.podcast.db.PodcastDBHelper;
 import br.ufpe.cin.if710.podcast.db.PodcastProvider;
 import br.ufpe.cin.if710.podcast.db.PodcastProviderContract;
@@ -51,14 +53,16 @@ public class MainActivity extends Activity {
    // private static ServiceDownloadDB service_d;
     private ListView items;
     private BroadcastDownload broad;
-    private Cursor c;
     private int posicaoClick;
-
-
+    private List<Episode> episodes;
+    private EpisodeDatabase episodioDatabase;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        episodioDatabase = Room.databaseBuilder(getApplicationContext(),
+                EpisodeDatabase.class, "episode-db").build();
 
         items = (ListView) findViewById(R.id.items);
 
@@ -86,89 +90,105 @@ public class MainActivity extends Activity {
         return super.onOptionsItemSelected(item);
     }
 
-    private class ViewHolder{ //usando padrão recomendado, contendo os textViews necessários na hora de alterar a view
-        final TextView textViewTitle;
-        final TextView textViewPubDate;
-        final Button btn_down;
+//    private class ViewHolder{ //usando padrão recomendado, contendo os textViews necessários na hora de alterar a view
+//        final TextView textViewTitle;
+//        final TextView textViewPubDate;
+//        final Button btn_down;
+//
+//        private ViewHolder(View view){
+//            this.textViewTitle = (TextView) view.findViewById(R.id.item_title);
+//            this.textViewPubDate = (TextView) view.findViewById(R.id.item_date);
+//            this.btn_down = (Button) view.findViewById(R.id.item_action);
+//        }
+//    }
 
-        private ViewHolder(View view){
-            this.textViewTitle = (TextView) view.findViewById(R.id.item_title);
-            this.textViewPubDate = (TextView) view.findViewById(R.id.item_date);
-            this.btn_down = (Button) view.findViewById(R.id.item_action);
-        }
-    }
-
-    private class AdapterItemdb extends CursorAdapter { //adapter necessário para carregar os itens do db
+    private class AdapterItemdb extends ArrayAdapter<Episode> { //adapter necessário para carregar os itens do db
         //passo 6
         ViewHolder vh;
         Context cont;
        // Cursor cursor_glo;
+        int view;
 
-        public AdapterItemdb(Context context, Cursor cursor){
-            super(context, cursor, 0);
-            cont = context;
+        public AdapterItemdb(Context context, int i, List<Episode> episodes){
+            super(context, i, episodes);
+            view = i;
         }
-        @Override
-        public View newView(Context context, Cursor cursor, ViewGroup parent) {
-            return LayoutInflater.from(context).inflate(R.layout.itemlista,parent,false); //usando o xml dado
+        class ViewHolder {
+            TextView item_title;
+            TextView item_date;
+            Button btn_down;
         }
 
-
         @Override
-        public void bindView(View view, Context context, final Cursor cursor) {
-            vh = new ViewHolder(view); //padrão recomendado para o scroll
-            view.setTag(vh); //amarrando à view
-            String pubdate = cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DATE));
-            String title = cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_TITLE));
-
-            vh.textViewPubDate.setText(pubdate);
-            vh.textViewTitle.setText(title);
-
-            final int position = cursor.getPosition();//usado pois há diferença entre o índice do item clicado com o o índice apontado pelo cursor
-            vh.textViewTitle.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) { //passo 5
-                    Intent i = new Intent(cont,EpisodeDetailActivity.class);
-                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);//essa flag é necessária pois o listener está sendo instanciado
-                    //no próprio adapter e não numa activity
-                    cursor.moveToPosition(position);//força mudança de posição do cursor para pegar informações o item clicado
-                    i.putExtra("Titulo",cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_TITLE)));
-                    i.putExtra("Descricao",cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DESC)));
-                    i.putExtra("PubDate",cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DATE)));
-                    cont.startActivity(i);//redireciona para activity EpisodeDetailActivity
-                }
-            });
-
-            //aqui verifica quais itens já foram baixados, para que o texto do botão seja 'escutar' e ao clicá-lo,
-            //iniciar o service do media player
-            if(cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_FILE_URI))!=null){
-                //Toast.makeText(getApplicationContext(),"Baixado",Toast.LENGTH_SHORT).show();
-                vh.btn_down.setText(R.string.muda_btn);
-                vh.btn_down.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        cursor.moveToPosition(position);
-                        Intent i = new Intent(cont,EscutarPodcast.class);
-                        i.putExtra("URI_ARQ",cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_FILE_URI)));
-                        //repassa a string da URI do arquivo para a activity criada com os botões de play e pause do episódio
-                        startActivity(i);
-                    }
-                });
-            }else{
-                vh.btn_down.setText(R.string.action_download);
-                vh.btn_down.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        cursor.moveToPosition(position);
-
-                        //inicia service que fará o download do .mp3
-                        posicaoClick = position;
-                        ServiceDownloadDB.startActionEpi(cont,cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper.EPISODE_DOWNLOAD_LINK)));
-                        // Log.d("ID_ITEM_BTN",cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper._ID)));
-                    }
-                });
+        public View getView(final int position, View convertView, ViewGroup parent){
+            final ViewHolder viewHolder;
+            if (convertView == null) {
+                convertView = View.inflate(getContext(), view, null);
+                viewHolder = new ViewHolder();
+                viewHolder.item_title = (TextView) convertView.findViewById(R.id.item_title);
+                viewHolder.item_date = (TextView) convertView.findViewById(R.id.item_date);
+                viewHolder.btn_down = (Button)convertView.findViewById(R.id.item_action);
+                convertView.setTag(viewHolder);
+            } else {
+                viewHolder = (ViewHolder) convertView.getTag();
             }
+            viewHolder.item_title.setText(getItem(position).getTitle());
+            viewHolder.item_date.setText(getItem(position).getPubDate());
+            viewHolder.item_title.setOnClickListener(
+                    new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) { //passo 5
+                            Intent i = new Intent(cont,EpisodeDetailActivity.class);
+                            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);//essa flag é necessária pois o listener está sendo instanciado
+                            //no próprio adapter e não numa activity
+                            i.putExtra("Titulo",getItem(position).getTitle());
+                            i.putExtra("Descricao",getItem(position).getDescription());
+                            i.putExtra("PubDate",getItem(position).getPubDate());
+                            cont.startActivity(i);//redireciona para activity EpisodeDetailActivity
+                        }
+                    });
+
+            if(getItem(position).getDownloadUri()!=null){
+                viewHolder.btn_down.setEnabled(true);
+                viewHolder.btn_down.setText("Escutar");
+            }else{
+                //https://stackoverflow.com/questions/41256172/changing-one-item-only-in-a-listview-or-recycleview
+                viewHolder.btn_down.setText("Download");
+            }
+
+            viewHolder.btn_down.setOnClickListener(new View.OnClickListener() {
+
+                @Override
+                public void onClick(View view) {
+                    if(getItem(position).getDownloadUri()!=null){
+                        viewHolder.btn_down.setText(R.string.muda_btn);
+                        viewHolder.btn_down.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                Intent i = new Intent(cont,EscutarPodcast.class);
+                                i.putExtra("URI_ARQ", getItem(position).getDownloadUri());
+                                //repassa a string da URI do arquivo para a activity criada com os botões de play e pause do episódio
+                                startActivity(i);
+                            }
+                        });
+                    }else{
+                        vh.btn_down.setText(R.string.action_download);
+                        vh.btn_down.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                posicaoClick = position;
+                                ServiceDownloadDB.startActionEpi(cont,getItem(position).getDownloadUri());
+                                // Log.d("ID_ITEM_BTN",cursor.getString(cursor.getColumnIndexOrThrow(PodcastDBHelper._ID)));
+                            }
+                        });
+                    }
+                }
+
+
+            });
+            return convertView;
         }
+
     }
 
     @Override
@@ -178,6 +198,7 @@ public class MainActivity extends Activity {
         broad = new BroadcastDownload();
         IntentFilter filter = new IntentFilter("br.ufpe.cin.if710.podcast.service.download_done");
         registerReceiver(broad,filter);
+        Log.d(">>>>>>>>>>>>>>>>>", "Registei ao Service");
 
     }
 
@@ -186,16 +207,15 @@ public class MainActivity extends Activity {
         super.onResume();
 
         try {//trocar para ver conexão com a internet
-            ContentResolver cr = getContentResolver();
-            c = cr.query(PodcastProviderContract.EPISODE_LIST_URI, new String[]{}, null, new String[]{}, null);
-            if (c.getCount() == 0 && ConexaoInternet.conectado(this)) { //o uso de getCount seria apenas para quando o aplicativo for executado pela primeira vez
+
+            if (episodes == null && ConexaoInternet.conectado(this)) { //o uso de getCount seria apenas para quando o aplicativo for executado pela primeira vez
                //chama método estático do service que é responsável pelo startService, que irá fazer o download do feed
                 Toast.makeText(this,"Baixando o feed!",Toast.LENGTH_SHORT).show();
                 ServiceDownloadDB.startActionFeed(this);
             }else{
                 //se não estiver conectado, apenas seta o adapter para que seja exibido o que já foi baixado (e já está no banco)
-                if(!ConexaoInternet.conectado(this) || c.getCount()>0) {
-                    AdapterItemdb adapt = new AdapterItemdb(this,c);
+                if(!ConexaoInternet.conectado(this)) {
+                    AdapterItemdb adapt = new AdapterItemdb(this,R.layout.itemlista,episodes);
                     items.setAdapter(adapt);
                 }
             }
@@ -208,9 +228,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onStop() {
         super.onStop();
-        c.close();//fechando cursor usado no onResume aqui, pois se fosse feito no onPause, causaria problemas sobre usar cursor já fechado
         unregisterReceiver(broad);//tirando o registro do receiver
-
     }
 
   @Override
@@ -226,42 +244,43 @@ public class MainActivity extends Activity {
       }
       @Override
       public void onReceive(Context context, Intent intent) {
-          runThread();
+          (new FillEpisodeList()).execute();
       }
   }
 
-  public void runThread(){
-        runOnUiThread(new Thread(new Runnable() {
-            @Override
-            public void run() throws NullPointerException {
-                ContentResolver cr = getContentResolver();
-                Cursor c = cr.query(PodcastProviderContract.EPISODE_LIST_URI,
-                        PodcastDBHelper.columns,
-                        null,
-                        new String[]{},
-                        null);
+    private class FillEpisodeList extends AsyncTask<String, Void, List<Episode>> {
+        @Override
+        protected void onPreExecute() {
+            Toast.makeText(getApplicationContext(), "iniciando...", Toast.LENGTH_SHORT).show();
+        }
 
-                AdapterItemdb aidb = new AdapterItemdb(getApplicationContext(),c);
-                items.setAdapter(aidb);
-                //como as duas actions implementadas no ServiceDownloadDB enviam broadcast para um mesmo receiver e ele só executa uma função
-                //a partir desse try, ele verifica se o episódio foi baixado para que um toast seja exibido
-                try{
-                    c.moveToPosition(posicaoClick);
-                    String pos = posicaoClick+"";
-                    c = cr.query(PodcastProviderContract.EPISODE_LIST_URI,
-                            new String[]{PodcastDBHelper.EPISODE_FILE_URI},
-                            PodcastDBHelper._ID+"=?",
-                            new String[]{pos},
-                            null);
-                    if(c.moveToFirst()) {
-                        Toast.makeText(getApplicationContext(),"Episódio "+posicaoClick+" baixado!",Toast.LENGTH_SHORT).show();
-                    }
-                }catch (NullPointerException e){
-                    e.printStackTrace();
+        @Override
+        protected List<Episode> doInBackground(String... params) {
+            episodes = episodioDatabase.daoAccess().fetchAllData();
+            return episodes;
+        }
+
+        @Override
+        protected void onPostExecute(List<Episode> feed) {
+            Toast.makeText(getApplicationContext(), "terminando...", Toast.LENGTH_SHORT).show();
+
+            //Adapter Personalizado
+            AdapterItemdb adapter = new AdapterItemdb(getApplicationContext(), R.layout.itemlista, episodes);
+
+            //atualizar o list view
+            items.setAdapter(adapter);
+            items.setTextFilterEnabled(true);
+            /*
+            items.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    XmlFeedAdapter adapter = (XmlFeedAdapter) parent.getAdapter();
+                    ItemFeed item = adapter.getItem(position);
+                    String msg = item.getTitle() + " " + item.getLink();
+                    Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
                 }
-
-            }
-        }));
-  }
-
+            });
+            /**/
+        }
+    }
 }

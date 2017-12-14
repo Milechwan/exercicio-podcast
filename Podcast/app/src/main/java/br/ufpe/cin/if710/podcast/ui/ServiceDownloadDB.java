@@ -1,12 +1,12 @@
 package br.ufpe.cin.if710.podcast.ui;
 
 import android.app.IntentService;
+import android.arch.persistence.room.Room;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Environment;
 import android.preference.PreferenceManager;
@@ -28,6 +28,8 @@ import java.net.URL;
 import java.util.List;
 
 import br.ufpe.cin.if710.podcast.R;
+import br.ufpe.cin.if710.podcast.db.Episode;
+import br.ufpe.cin.if710.podcast.db.EpisodeDatabase;
 import br.ufpe.cin.if710.podcast.db.PodcastDBHelper;
 import br.ufpe.cin.if710.podcast.db.PodcastProviderContract;
 import br.ufpe.cin.if710.podcast.domain.ItemFeed;
@@ -69,33 +71,46 @@ public class ServiceDownloadDB extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
         if (intent != null) {
+            EpisodeDatabase episodioDatabase;
+             episodioDatabase = Room.databaseBuilder(getApplicationContext(),
+                    EpisodeDatabase.class, "episode-db").build();
+
             final String action = intent.getAction();
             if (ACTION_Download.equals(action)) {//nesta action, faz-se o download do feed
                 final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
                 String defaultt = getResources().getString(R.string.feed_link);
+
                 String feed = sharedPreferences.getString(getString(R.string.link_feed),defaultt);
+                //String feed = "http://naosalvo.com.br/podcast/feed.xml";
                 handleActionDownload(feed);
                 //daqui em diante, faz-se a inserção no banco de dados
-                ContentResolver cr = getContentResolver(); //responsável por lidar com o PodcastProvider
-                ContentValues cv = new ContentValues();
-
-                for(int i=0;i<feed_itens.size();i++){
+//                ContentResolver cr = getContentResolver(); //responsável por lidar com o PodcastProvider
+//                ContentValues cv = new ContentValues();
+                Log.d(">>>>>>>>>>>>>>>>>", "Estou dentro do download");
+                for(int i= 0;i<feed_itens.size();i++){
                     ItemFeed if_ = feed_itens.get(i);
-                    cv.put(PodcastDBHelper.EPISODE_LINK,if_.getLink());
-                    cv.put(PodcastDBHelper.EPISODE_DATE,if_.getPubDate());
-                    cv.put(PodcastDBHelper.EPISODE_TITLE,if_.getTitle());
-                    cv.put(PodcastDBHelper.EPISODE_DOWNLOAD_LINK,if_.getDownloadLink());
-                    cv.put(PodcastDBHelper.EPISODE_DESC,if_.getDescription());
-
-                    int upd = cr.update(PodcastProviderContract.EPISODE_LIST_URI,
-                        cv,
-                        PodcastDBHelper.EPISODE_DOWNLOAD_LINK+"=?",
-                        new String[]{if_.getDownloadLink()});
-                    if(upd==0){//se ele não encontrar na tabela nenhum item com tal link que seja atualizado, pode inserir
-                        //a checagem é feita para evitar inserir itens já existentes no bd
-                        cr.insert(PodcastProviderContract.EPISODE_LIST_URI,cv);
-                    }
-                    cv.clear();
+                    Episode episodio = new Episode();
+                    episodio.setDescription(if_.getDescription());
+                    episodio.setDownloadLink(if_.getDownloadLink());
+                    episodio.setTitle(if_.getTitle());
+                    episodio.setPubDate(if_.getPubDate());
+                    episodio.setLink(if_.getLink());
+                    episodioDatabase.daoAccess().insertOnlySingleRecord(episodio);
+//                    cv.put(PodcastDBHelper.EPISODE_LINK,if_.getLink());
+//                    cv.put(PodcastDBHelper.EPISODE_DATE,if_.getPubDate());
+//                    cv.put(PodcastDBHelper.EPISODE_TITLE,if_.getTitle());
+//                    cv.put(PodcastDBHelper.EPISODE_DOWNLOAD_LINK,if_.getDownloadLink());
+//                    cv.put(PodcastDBHelper.EPISODE_DESC,if_.getDescription());
+//
+//                    int upd = cr.update(PodcastProviderContract.EPISODE_LIST_URI,
+//                        cv,
+//                        PodcastDBHelper.EPISODE_DOWNLOAD_LINK+"=?",
+//                        new String[]{if_.getDownloadLink()});
+//                    if(upd==0){//se ele não encontrar na tabela nenhum item com tal link que seja atualizado, pode inserir
+//                        //a checagem é feita para evitar inserir itens já existentes no bd
+//                        cr.insert(PodcastProviderContract.EPISODE_LIST_URI,cv);
+//                    }
+//                    cv.clear();
 
                 }
                 //assim que terminar, manda brodcast para setar o adapter
@@ -106,14 +121,17 @@ public class ServiceDownloadDB extends IntentService {
             } else if (ACTION_Epi.equals(action)) {
                 final String param1 = intent.getStringExtra(TAG_EPISODE);
                 File epi = baixaEpisodio(param1);
-                ContentResolver cr = getContentResolver();
-                ContentValues cv = new ContentValues();
+                Episode episode = episodioDatabase.daoAccess().getSingleRecord(param1);
+//                ContentResolver cr = getContentResolver();
+//                ContentValues cv = new ContentValues();
                 //como antes não era possível pegar a URI do arquivo, agora usa-se o método .toURI() e finalmente o banco pode possuir esse valor
-                cv.put(PodcastDBHelper.EPISODE_FILE_URI,epi.toURI().toString());
-                cr.update(PodcastProviderContract.EPISODE_LIST_URI,
-                        cv,
-                        PodcastDBHelper.EPISODE_DOWNLOAD_LINK+"=?",
-                        new String[]{param1});
+//                cv.put(PodcastDBHelper.EPISODE_FILE_URI,epi.toURI().toString());
+//                cr.update(PodcastProviderContract.EPISODE_LIST_URI,
+//                        cv,
+//                        PodcastDBHelper.EPISODE_DOWNLOAD_LINK+"=?",
+//                        new String[]{param1});
+                episode.setDownloadUri(epi.toURI().toString());
+                episodioDatabase.daoAccess().updateRecord(episode);
                 sendBroadcast(new Intent("br.ufpe.cin.if710.podcast.service.download_done"));
 
             }
@@ -141,8 +159,9 @@ public class ServiceDownloadDB extends IntentService {
             if (in != null) {
                 in.close();
             }
-        }
+        }Log.d(">>>>>>>>>>>>>>>>..","Terminei ao download");
        return response;
+
     }
 
     private File baixaEpisodio(String param){//método exclusivo para baixar episódio

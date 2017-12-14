@@ -25,8 +25,8 @@ public interface DaoEpisode {
     @Query("SELECT * FROM Episode")
     List<Episode> fetchAllData();
 
-    @Query("SELECT * FROM Episode WHERE title =:title")
-    Episode getSingleRecord(String title);
+    @Query("SELECT * FROM Episode WHERE downloadLink =:link")
+    Episode getSingleRecord(String link);
 
     @Update
     void updateRecord(Episode episode);
