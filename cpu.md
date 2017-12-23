@@ -19,4 +19,5 @@ Temos os seguintes cenários para valores máximos atingidos:
 
 + Cenário ouvindo episódio até o final com a tela na activity EscutarPodcast (até o celular bloquear a tela após 2min):   
   - O uso da CPU só se mostra presente ao iniciar o app, como esperado, e ao dar scroll na lista do feed até apertar o botão de 'Escutar', a porcentagem fica entre 10 e 12%, depois disso estabiliza em 0%. Não foi apresentado uso de CPU por outros processos/aplicativos. 
+  
   ![Imagem 4](resultados-profiler/cpu-ouvindo1episódio.jpg)
